@@ -1,0 +1,11 @@
+pre-commit:
+  commands:
+    lint:
+      run: pnpm turbo lint
+    typecheck:
+      run: pnpm turbo typecheck
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit $1
