@@ -1,15 +1,24 @@
 import { db } from '@/infra/db/connection'
 import { goals } from '@/infra/db/schema'
 
-interface CreateGoalParams {
+type RegisterGoalRequest = {
   title: string
   desiredWeeklyFrequency: number
 }
 
-export async function createGoal({
+type RegisterGoalReply = {
+  goal: {
+    title: string
+    desiredWeeklyFrequency: number
+    id: string
+    createdAt: Date
+  }
+}
+
+export async function registerGoal({
   title,
   desiredWeeklyFrequency,
-}: CreateGoalParams) {
+}: RegisterGoalRequest): Promise<RegisterGoalReply> {
   const [goal] = await db
     .insert(goals)
     .values({ title, desiredWeeklyFrequency })

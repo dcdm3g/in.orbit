@@ -1,19 +1,40 @@
+import type { Result } from '@/application/result'
 import { db } from '@/infra/db/connection'
 import { goalCompletions, goals } from '@/infra/db/schema'
 import { endOfWeek, startOfWeek } from 'date-fns'
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm'
 
-interface CreateGoalCompletionParams {
+type RegisterGoalCompletionRequest = {
   goalId: string
 }
 
-export async function createGoalCompletion({
-  goalId,
-}: CreateGoalCompletionParams) {
-  const now = new Date()
+type RegisterGoalCompletionReply = Result<
+  {
+    goalCompletion: {
+      goalId: string
+      id: string
+      createdAt: Date
+    }
+  },
+  'GOAL_NOT_FOUND' | 'GOAL_ALREADY_COMPLETED'
+>
 
+export async function registerGoalCompletion({
+  goalId,
+}: RegisterGoalCompletionRequest): Promise<RegisterGoalCompletionReply> {
+  const now = new Date()
   const startOfThisWeek = startOfWeek(now)
   const endOfThisWeek = endOfWeek(now)
+
+  const [goal] = await db.select().from(goals).where(eq(goals.id, goalId))
+
+  if (!goal) {
+    return {
+      kind: 'failure',
+      error: 'GOAL_NOT_FOUND',
+      message: "Sorry, couldn't found that goal.",
+    }
+  }
 
   const goalCompletionsCount = db.$with('goal_completion_count').as(
     db
@@ -32,12 +53,12 @@ export async function createGoalCompletion({
       .groupBy(goalCompletions.goalId)
   )
 
-  const result = await db
+  const [result] = await db
     .with(goalCompletionsCount)
     .select({
       desiredWeeklyFrequency: goals.desiredWeeklyFrequency,
       completionCount: sql`
-        COALESCE(${goalCompletionsCount.completionCount}, 0)
+        coalesce(${goalCompletionsCount.completionCount}, 0)
       `.mapWith(Number),
     })
     .from(goals)
@@ -45,17 +66,20 @@ export async function createGoalCompletion({
     .leftJoin(goalCompletionsCount, eq(goalCompletionsCount.goalId, goals.id))
     .limit(1)
 
-  const { completionCount, desiredWeeklyFrequency } = result[0]
+  const { completionCount, desiredWeeklyFrequency } = result
 
   if (completionCount >= desiredWeeklyFrequency) {
-    throw new Error('Goal already completed this week.')
+    return {
+      kind: 'failure',
+      error: 'GOAL_ALREADY_COMPLETED',
+      message: "You've already achieved this goal.",
+    }
   }
 
-  const insertResult = await db
+  const [goalCompletion] = await db
     .insert(goalCompletions)
     .values({ goalId })
     .returning()
-  const [goalCompletion] = insertResult
 
-  return { goalCompletion }
+  return { kind: 'success', data: { goalCompletion } }
 }

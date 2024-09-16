@@ -1,9 +1,23 @@
 import { db } from '@/infra/db/connection'
 import { goalCompletions, goals } from '@/infra/db/schema'
 import { endOfWeek, startOfWeek } from 'date-fns'
-import { and, count, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm'
 
-export async function getWeekSummary() {
+type GetWeekSummaryReply = {
+  summary: {
+    completed: number
+    total: number
+    goalsPerDay: {
+      [day: string]: {
+        id: string
+        title: string
+        completedAt: string
+      }[]
+    }
+  }
+}
+
+export async function getWeekSummary(): Promise<GetWeekSummaryReply> {
   const now = new Date()
 
   const startOfThisWeek = startOfWeek(now)
@@ -39,6 +53,7 @@ export async function getWeekSummary() {
           lte(goalCompletions.createdAt, endOfThisWeek)
         )
       )
+      .orderBy(desc(goalCompletions.createdAt))
   )
 
   const goalsCompletedByWeekDay = db.$with('goals_completed_by_week_day').as(
@@ -57,19 +72,20 @@ export async function getWeekSummary() {
       })
       .from(goalsCompletedInWeek)
       .groupBy(goalsCompletedInWeek.completedAtDate)
+      .orderBy(desc(goalsCompletedInWeek.completedAtDate))
   )
 
-  const summary = await db
+  const [summary] = await db
     .with(goalsCreatedUpToWeek, goalsCompletedInWeek, goalsCompletedByWeekDay)
     .select({
       completed: sql`(select count(*) from ${goalsCompletedInWeek})`.mapWith(
         Number
       ),
       total:
-        sql`(select sum(${goalsCreatedUpToWeek.desiredWeeklyFrequency}) from ${goalsCreatedUpToWeek})`.mapWith(
+        sql`(select coalesce(sum(${goalsCreatedUpToWeek.desiredWeeklyFrequency}), 0) from ${goalsCreatedUpToWeek})`.mapWith(
           Number
         ),
-      goalsPerDay: sql`
+      goalsPerDay: sql<GetWeekSummaryReply['summary']['goalsPerDay']>`
         json_object_agg(
           ${goalsCompletedByWeekDay.completedAtDate},
           ${goalsCompletedByWeekDay.completions}

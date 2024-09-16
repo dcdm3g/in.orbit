@@ -1,4 +1,3 @@
-import { createGoal } from '@/application/use-cases/create-goal'
 import { getWeekPendingGoals } from '@/application/use-cases/get-week-pending-goals'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
@@ -23,9 +22,9 @@ export async function getWeekPendingGoalsController(app: FastifyInstance) {
         },
       },
     },
-    async () => {
+    async (_, reply) => {
       const { pendingGoals } = await getWeekPendingGoals()
-      return { pendingGoals }
+      return reply.status(200).send({ pendingGoals })
     }
   )
 }

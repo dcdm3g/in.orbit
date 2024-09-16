@@ -1,9 +1,9 @@
-import { createGoal } from '@/application/use-cases/create-goal'
+import { registerGoal } from '@/application/use-cases/register-goal'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
-export async function createGoalController(app: FastifyInstance) {
+export async function registerGoalController(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().post(
     '/goals',
     {
@@ -26,7 +26,7 @@ export async function createGoalController(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { title, desiredWeeklyFrequency } = request.body
-      const { goal } = await createGoal({ title, desiredWeeklyFrequency })
+      const { goal } = await registerGoal({ title, desiredWeeklyFrequency })
 
       return reply.status(201).send({ goal })
     }

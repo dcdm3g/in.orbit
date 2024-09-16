@@ -3,7 +3,16 @@ import { goalCompletions, goals } from '@/infra/db/schema'
 import { endOfWeek, startOfWeek } from 'date-fns'
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm'
 
-export async function getWeekPendingGoals() {
+type GetWeekPendingGoalsReply = {
+  pendingGoals: {
+    id: string
+    title: string
+    desiredWeeklyFrequency: number
+    completionCount: number
+  }[]
+}
+
+export async function getWeekPendingGoals(): Promise<GetWeekPendingGoalsReply> {
   const now = new Date()
 
   const startOfThisWeek = startOfWeek(now)

@@ -4,10 +4,10 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-type-provider-zod'
-import { createGoalController } from './controllers/create-goal'
-import { createGoalCompletionController } from './controllers/create-goal-completion'
 import { getWeekPendingGoalsController } from './controllers/get-week-pending-goals'
 import { getWeekSummaryController } from './controllers/get-week-summary'
+import { registerGoalController } from './controllers/register-goal'
+import { registerGoalCompletionController } from './controllers/register-goal-completion'
 
 const app = fastify()
 
@@ -18,9 +18,9 @@ app.register(cors, {
 app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
 
-app.register(createGoalController)
+app.register(registerGoalController)
 app.register(getWeekPendingGoalsController)
-app.register(createGoalCompletionController)
+app.register(registerGoalCompletionController)
 app.register(getWeekSummaryController)
 
 app.listen({ port: 3333 }).then(() => {
