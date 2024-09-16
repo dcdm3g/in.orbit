@@ -7,11 +7,14 @@
     "db:seed": "tsx --env-file .env src/infra/db/seed.ts",
     "db:migrate": "tsx --env-file .env src/infra/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
+    "build": "tsup",
+    "start": "node --env-file .env build/server.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20",
     "drizzle-kit": "^0.24.2",
+    "tsup": "^8.2.4",
     "tsx": "^4.19.1",
     "typescript": "^5"
   },
